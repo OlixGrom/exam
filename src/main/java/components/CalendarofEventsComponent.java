@@ -1,6 +1,7 @@
 package components;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
@@ -13,17 +14,19 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CalendarofEventsComponent extends AbsBaseComponent {
-    private final String locatorLocator = "//div[@class='dod_new-events__list js-dod_new_events']/a";
+    private final String arrayCardsLocator = "//div[@class='dod_new-events__list js-dod_new_events']/a";
     private final String dateEventLocator = "//span[@class='dod_new-event__date-text']";
     private final String typeMeetLocator = "//div[@class='dod_new-event__type']";
-    private final String filterLocator = "//span[@class='dod_new-events__title js-dod_new-events-title']/following-sibling::div/div/";
+    private final String filterLocator = "//div[@class='dod_new-events__header-left']//div[@class='dod_new-events-dropdown__input']//span[text()='Все мероприятия']/..";
+    private static final String NAME_OF_FILTER_LOCATOR = "//div[@class='dod_new-events__header-left']//a[text()='%s']";
+
     public CalendarofEventsComponent(WebDriver driver) {
         super(driver);
     }
 
     public void checkData() {
         //Проверить, что есть карточки мероприятий
-        List<WebElement> webElementList = $$(By.xpath(locatorLocator));
+        List<WebElement> webElementList = $$(By.xpath(arrayCardsLocator));
         if (webElementList.size() != 0) {
             boolean isNotBefore = isNotBefore(webElementList);
             assertThat(isNotBefore)
@@ -38,12 +41,14 @@ public class CalendarofEventsComponent extends AbsBaseComponent {
 
     public void checkFilter(String filterName) {
         //Проверить, что есть карточки мероприятий
-        List<WebElement> webElementList = $$(By.xpath(locatorLocator));
+        List<WebElement> webElementList = $$(By.xpath(arrayCardsLocator));
         if (webElementList.size() != 0) {
-            $(By.xpath(filterLocator+"span")).click();
-            $(By.xpath(filterLocator+"a[text()='"+filterName+"']")).click();
+            // Скрываем элемент cookies через JavaScript
+            $(By.xpath("//button[@class='js-cookie-accept cookies__button']")).click();
+            $(By.xpath(filterLocator)).click();
+            $(By.xpath(String.format(NAME_OF_FILTER_LOCATOR, filterName))).click();
 
-            webElementList = $$(By.xpath(locatorLocator));//обновили карточки
+            webElementList = $$(By.xpath(arrayCardsLocator));//обновили карточки
             if (webElementList.size() != 0) {
                 boolean isRequiredType = isCardRequiredType(webElementList,filterName);
                 assertThat(isRequiredType)
@@ -61,6 +66,32 @@ public class CalendarofEventsComponent extends AbsBaseComponent {
                     .isEqualTo(true);
         }
     }
+
+//    public void checkFilter(String filterName) {
+//        //Проверить, что есть карточки мероприятий
+//        List<WebElement> webElementList = $$(By.xpath(arrayCardsLocator));
+//        if (webElementList.size() != 0) {
+//            $(By.xpath(filterLocator+"span")).click();
+//            $(By.xpath(filterLocator+"a[text()='"+filterName+"']")).click();
+//
+//            webElementList = $$(By.xpath(arrayCardsLocator));//обновили карточки
+//            if (webElementList.size() != 0) {
+//                boolean isRequiredType = isCardRequiredType(webElementList,filterName);
+//                assertThat(isRequiredType)
+//                        .as("The event type in the card does not match the selected filter")
+//                        .isEqualTo(true);
+//
+//            } else {
+//                assertThat(false)
+//                        .as("Event cards for current type not found")
+//                        .isEqualTo(true);
+//            }
+//        } else {
+//            assertThat(false)
+//                    .as("Event cards are missing")
+//                    .isEqualTo(true);
+//        }
+//    }
 
     private boolean isCardRequiredType(List<WebElement> webElementList, String filterName) {
         for (WebElement element : webElementList) {
